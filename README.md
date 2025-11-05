@@ -40,4 +40,10 @@ python splicer.py -o output.wav -z "ZCZC_CODE" -O "EST"
 
 Note that -O and -l are mutually exclusive; you can only use one of them at a time.
 
+## Acknowledgments
+
+- [EASyKit](https://theeasykit.weebly.com/) for the original audio files from EMNet
+- [pydub](https://github.com/jiaaro/pydub) library for audio processing
+- [Global Weather and EAS Society](https://globaleas.org/) for support and resources
+
 ## GenAI Disclosure Notice: Portions of this repository have been generated using Generative AI tools (ChatGPT, ChatGPT Codex, GitHub Copilot).
