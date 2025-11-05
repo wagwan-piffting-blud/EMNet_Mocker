@@ -26,10 +26,18 @@ If you want to include the full EAS tones, add the `-t` or `--include-tones` fla
 python splicer.py -o output.wav -z "ZCZC_CODE" -t
 ```
 
-You can also combine the two flags as needed:
+You can also combine the above two flags as needed:
 
 ```bash
 python splicer.py -o output.wav -z "ZCZC_CODE" -l -t
 ```
+
+You may also specify a timezone offset override using -O or --tz-override (e.g., "EST", "PDT"; most common US timezones are supported):
+
+```bash
+python splicer.py -o output.wav -z "ZCZC_CODE" -O "EST"
+```
+
+Note that -O and -l are mutually exclusive; you can only use one of them at a time.
 
 ## GenAI Disclosure Notice: Portions of this repository have been generated using Generative AI tools (ChatGPT, ChatGPT Codex, GitHub Copilot).
