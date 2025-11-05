@@ -32,17 +32,16 @@ You can also combine the above two flags as needed:
 python splicer.py -o output.wav -z "ZCZC_CODE" -l -t
 ```
 
-You may also specify a timezone offset override using -O or --tz-override (e.g., "EST", "PDT"; most common US timezones are supported):
+You may also specify a manual timezone offset override using -O or --tz-override (e.g., "EST", "PDT"; most common US timezones and their DST counterparts are supported):
 
 ```bash
 python splicer.py -o output.wav -z "ZCZC_CODE" -O "EST"
 ```
 
-Note that -O and -l are mutually exclusive; you can only use one of them at a time.
+Note that `-O` and `-l` are mutually exclusive; you can only use one of them at a time.
 
 ## Acknowledgments
-
-- [EASyKit](https://theeasykit.weebly.com/) for the original audio files from EMNet
+- [The EASyKit](https://theeasykit.weebly.com/) for the original audio files from EMNet
 - [pydub](https://github.com/jiaaro/pydub) library for audio processing
 - [Global Weather and EAS Society](https://globaleas.org/) for support and resources
 
