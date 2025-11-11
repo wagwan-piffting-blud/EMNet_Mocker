@@ -109,7 +109,7 @@ def split_zczc(zczc_string):
     We need to use a Regex to split this string into its components. This is because the SAME standard allows for multiple county FIPS codes to be specified in the PSSCCC field, which means that we cannot simply split on the hyphens. The regex will be designed to capture each component of the ZCZC string.
     """
 
-    pattern = r"^ZCZC-([A-Z]{3})-([A-Z]{3})-((?:\d{6}(?:-?)){1,31})\+(\d{4})-(\d{7})-([A-Za-z0-9\/ ]{0,8})-$"
+    pattern = r"^ZCZC-([A-Z]{3})-([A-Z]{3})-((?:\d{6}(?:-?)){1,31})\+(\d{4})-(\d{7})-([A-Za-z0-9\/ ]{0,8})-?$"
     match = re.match(pattern, zczc_string)
 
     if match:
@@ -172,7 +172,7 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
     if os.path.exists(event_file):
         audio_segments.append(AudioSegment.from_wav(event_file))
     else:
-        print(f"Warning: Event audio file {event_file} not found.")
+        raise FileNotFoundError(f"Warning: Event audio file {event_file} not found.")
 
     for index, location_code in enumerate(location_code_list):
         if (index == len(location_code_list) - 1) and index != 0:
@@ -180,19 +180,19 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
             if os.path.exists(and_file):
                 audio_segments.append(AudioSegment.from_wav(and_file))
             else:
-                print(f"Warning: And audio file {and_file} not found.")
+                raise FileNotFoundError(f"Warning: And audio file {and_file} not found.")
         location_file = os.path.join("LOC", f"{location_code}.wav")
         if os.path.exists(location_file):
             audio_segments.append(AudioSegment.from_wav(location_file))
         else:
-            print(f"Warning: Location audio file {location_file} not found.")
+            raise FileNotFoundError(f"Warning: Location audio file {location_file} not found.")
 
     until_file = os.path.join("OTHER", "until.wav")
 
     if os.path.exists(until_file):
         audio_segments.append(AudioSegment.from_wav(until_file))
     else:
-        print(f"Warning: Until audio file {until_file} not found.")
+        raise FileNotFoundError(f"Warning: Until audio file {until_file} not found.")
 
     issue_time = datetime_group[3:]
     issue_hour = int(issue_time[0:2])
@@ -256,15 +256,15 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
     if os.path.exists(hour_file):
         audio_segments.append(AudioSegment.from_wav(hour_file))
     else:
-        print(f"Warning: Hour audio file {hour_file} not found.")
+        raise FileNotFoundError(f"Warning: Hour audio file {hour_file} not found.")
     if os.path.exists(minute_file):
         audio_segments.append(AudioSegment.from_wav(minute_file))
     else:
-        print(f"Warning: Minute audio file {minute_file} not found.")
+        raise FileNotFoundError(f"Warning: Minute audio file {minute_file} not found.")
     if os.path.exists(ampm_file):
         audio_segments.append(AudioSegment.from_wav(ampm_file))
     else:
-        print(f"Warning: AM/PM audio file {ampm_file} not found.")
+        raise FileNotFoundError(f"Warning: AM/PM audio file {ampm_file} not found.")
 
     if include_tones:
         audio_segments.append(AudioSegment.silent(duration=1000).set_channels(1).set_sample_width(2))
@@ -292,9 +292,14 @@ def main():
     parser.add_argument("-v", "--version", action="version", version="EMnet Splicer 1.0.0 by Wags")
 
     args = parser.parse_args()
+
     if args.local_time and args.tz_override is not None:
         parser.error("Cannot use --local-time and --tz-override together.")
-    splice(args.output_file, args.zczc_code, args.local_time, args.include_tones, args.tz_override)
+
+    try:
+        splice(args.output_file, args.zczc_code, args.local_time, args.include_tones, args.tz_override)
+    except Exception as e:
+        print(f"Error: {e}")
 
 if __name__ == "__main__":
     main()

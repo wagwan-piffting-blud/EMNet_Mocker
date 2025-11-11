@@ -1,11 +1,28 @@
 # EMnet Splicer
 This script provides functionality to splice together multiple Comlabs Government Systems EMNet audio files into one single audio file based on a ZCZC EAS Header code. The splicing process ensures that the audio segments are concatenated in the correct order based on the header codes. As well, (basic) EAS tone generation is supported based on the ZCZC header information.
 
-Example Usage: `python splicer.py -o output.wav -z "ZCZC-WXR-RWT-031025-031021-031155-031153-019155-031177-031055-031131-019085-031053-019129+0100-2782118-KOAX/NWS"`
+Example Usage: `python splicer.py -o output.wav -z "ZCZC-WXR-RWT-031025-031021-031155-031153-019155-031177-031055-031131-019085-031053-019129+0100-2782118-KOAX/NWS-"`
 
 ## Requirements
-- Python 3.x
-- pydub library (for audio processing, you can install this with `pip install pydub`)
+- Python 3.x (3.13 and above needs `audioop-lts` for audioop backport since audioop is not included in the standard library for these versions)
+- pydub library (for audio processing)
+- ffmpeg (required by pydub for audio file handling)
+
+## Installation
+1. Clone the repository:
+
+```bash
+git clone https://github.com/wagwan-piffting-blud/EMNet_Mocker
+cd EMNet_Mocker
+```
+
+2. Install the required Python packages using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
+3. Ensure ffmpeg is installed and accessible in your system's PATH. You can download it from [ffmpeg.org](https://ffmpeg.org/download.html).
 
 ## Usage
 Basic usage:
