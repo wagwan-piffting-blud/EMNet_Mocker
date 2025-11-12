@@ -2,17 +2,21 @@
 EMnet Splicer
 =======================
 This script provides functionality to splice together multiple Comlabs Government Systems EMNet audio files into one single audio file based on a ZCZC EAS Header code. The splicing process ensures that the audio segments are concatenated in the correct order based on the header codes. As well, (basic) EAS tone generation is supported based on the ZCZC header information.
-
-Example Usage: python splicer.py -o output_file.wav -z ZCZC_CODE
 """
 
 import os
 import re
-import time
+import sys
 import argparse
 from datetime import datetime, timedelta, timezone
 from pydub import AudioSegment
 from pydub.generators import Sine
+
+ALT_MESSAGES = {
+    "ADR": "'A daily check message has been issued for' will be used instead of 'An administrative message has been issued for'",
+    "EVI": "'An order to evacuate immediately has been issued for' will be used instead of 'An immediate evacuation warning has been issued for'",
+    "SVR": "'This is a severe thunderstorm warning for' will be used instead of 'A severe thunderstorm warning has been issued for'",
+}
 
 def generate_tones(zczc_string):
     """
@@ -106,7 +110,7 @@ def split_zczc(zczc_string):
     JJJHHMM: Date-Time Group (7 digits)
     LLLLLLLL: Station Identifier (up to 8 characters)
 
-    We need to use a Regex to split this string into its components. This is because the SAME standard allows for multiple county FIPS codes to be specified in the PSSCCC field, which means that we cannot simply split on the hyphens. The regex will be designed to capture each component of the ZCZC string.
+    We need to use a regex to split this string into its components. This is because the SAME standard allows for multiple county FIPS codes to be specified in the PSSCCC field, which means that we cannot simply split on the hyphens. The regex below is designed to capture each component of the ZCZC string.
     """
 
     pattern = r"^ZCZC-([A-Z]{3})-([A-Z]{3})-((?:\d{6}(?:-?)){1,31})\+(\d{4})-(\d{7})-([A-Za-z0-9\/ ]{0,8})-?$"
@@ -117,7 +121,7 @@ def split_zczc(zczc_string):
     else:
         raise ValueError("Invalid ZCZC string format.")
 
-def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz_override=None):
+def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz_override=None, use_alt_message=False):
     """
     Splice audio segments based on the provided ZCZC code.
 
@@ -167,12 +171,19 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
     originator, event, location_codes, duration, datetime_group, station_id = zczc_split
     location_code_list = location_codes.split('-')
 
-    event_file = os.path.join("EVENTS", f"{event}.wav")
+    if os.path.exists(os.path.join("EVENTS", f"{event}.wav")) and event in ALT_MESSAGES:
+        if use_alt_message or (input(f"Alternative message available for event {event}. This means {ALT_MESSAGES[event]}. Use it? (y/n): ").strip().lower() == 'y' and sys.stdin.isatty()):
+            print(f"Using alternative message for event {event}. This means {ALT_MESSAGES[event]}.")
+            event_file = os.path.join("EVENTS", "ALT", f"{event}.wav")
+        else:
+            event_file = os.path.join("EVENTS", f"{event}.wav")
+    else:
+        event_file = os.path.join("EVENTS", f"{event}.wav")
 
     if os.path.exists(event_file):
         audio_segments.append(AudioSegment.from_wav(event_file))
     else:
-        raise FileNotFoundError(f"Warning: Event audio file {event_file} not found.")
+        raise FileNotFoundError(f"Event audio file {event_file} not found.")
 
     for index, location_code in enumerate(location_code_list):
         if (index == len(location_code_list) - 1) and index != 0:
@@ -180,19 +191,19 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
             if os.path.exists(and_file):
                 audio_segments.append(AudioSegment.from_wav(and_file))
             else:
-                raise FileNotFoundError(f"Warning: And audio file {and_file} not found.")
+                raise FileNotFoundError(f"And audio file {and_file} not found.")
         location_file = os.path.join("LOC", f"{location_code}.wav")
         if os.path.exists(location_file):
             audio_segments.append(AudioSegment.from_wav(location_file))
         else:
-            raise FileNotFoundError(f"Warning: Location audio file {location_file} not found.")
+            raise FileNotFoundError(f"Location audio file {location_file} not found.")
 
     until_file = os.path.join("OTHER", "until.wav")
 
     if os.path.exists(until_file):
         audio_segments.append(AudioSegment.from_wav(until_file))
     else:
-        raise FileNotFoundError(f"Warning: Until audio file {until_file} not found.")
+        raise FileNotFoundError(f"Until audio file {until_file} not found.")
 
     issue_time = datetime_group[3:]
     issue_hour = int(issue_time[0:2])
@@ -216,10 +227,11 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
 
     elif tz_override is not None:
         """
-        Adjust end time calculation to the specified timezone offset. Timezone offsets are specified as the name of the timezone (e.g., "EST", "PST", etc.). We create a timezone object with the specified offset and apply it to the issue time and duration to get the correct end time.
+        Adjust end time calculation to the specified timezone offset. Timezone offsets are specified as the name of the timezone (e.g., "EST", "PDT", etc.). We create a timezone object with the specified offset and apply it to the issue time and duration to get the correct end time. Includes a basic mapping of most US timezones to their UTC offsets. Source: https://en.wikipedia.org/wiki/Time_in_the_United_States#United_States_and_regional_time_zones
         """
         tz_offsets = {
             "UTC": 0,
+            "AST": -4,
             "EST": -5,
             "EDT": -4,
             "CST": -6,
@@ -228,6 +240,12 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
             "MDT": -6,
             "PST": -8,
             "PDT": -7,
+            "AKST": -9,
+            "AKDT": -8,
+            "HST": -10,
+            "HDT": -9,
+            "SST": -11,
+            "CHST": 10,
         }
         if tz_override not in tz_offsets:
             raise ValueError(f"Invalid timezone override: {tz_override}")
@@ -256,15 +274,15 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
     if os.path.exists(hour_file):
         audio_segments.append(AudioSegment.from_wav(hour_file))
     else:
-        raise FileNotFoundError(f"Warning: Hour audio file {hour_file} not found.")
+        raise FileNotFoundError(f"Hour audio file {hour_file} not found.")
     if os.path.exists(minute_file):
         audio_segments.append(AudioSegment.from_wav(minute_file))
     else:
-        raise FileNotFoundError(f"Warning: Minute audio file {minute_file} not found.")
+        raise FileNotFoundError(f"Minute audio file {minute_file} not found.")
     if os.path.exists(ampm_file):
         audio_segments.append(AudioSegment.from_wav(ampm_file))
     else:
-        raise FileNotFoundError(f"Warning: AM/PM audio file {ampm_file} not found.")
+        raise FileNotFoundError(f"AM/PM audio file {ampm_file} not found.")
 
     if include_tones:
         audio_segments.append(AudioSegment.silent(duration=1000).set_channels(1).set_sample_width(2))
@@ -273,14 +291,13 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
         audio_segments.append(AudioSegment.silent(duration=1000).set_channels(1).set_sample_width(2))
 
     if not audio_segments:
-        print("No audio segments found to splice.")
-        return
+        raise ValueError("No audio segments found to splice.")
 
     combined_audio = AudioSegment.silent(duration=0)
     for segment in audio_segments:
         combined_audio += segment
     combined_audio.export(output_file, format="wav")
-    print(f"Spliced audio saved to {output_file} successfully.")
+    print(f"Spliced audio saved to {output_file} successfully!")
 
 def main():
     parser = argparse.ArgumentParser(description="Splice EMNet audio files based on ZCZC EAS Header code.")
@@ -288,16 +305,26 @@ def main():
     parser.add_argument("-z", "--zczc_code", required=True, help="ZCZC EAS Header code to splice by.")
     parser.add_argument("-l", "--local-time", action="store_true", help="Use local time for calculations instead of UTC.")
     parser.add_argument("-O", "--tz-override", help="Override timezone offset by name (e.g., 'EST', 'PST'). Cannot be used with --local-time.")
+    parser.add_argument("-a", "--use-alt-message", action="store_true", help="Always use alternative message for the event if available.")
+    parser.add_argument("-A", "--no-alt-message", action="store_true", help="Never use alternative message for the event.")
     parser.add_argument("-t", "--include-tones", action="store_true", help="Include EAS tones in the spliced audio.")
     parser.add_argument("-v", "--version", action="version", version="EMnet Splicer 1.0.0 by Wags")
 
     args = parser.parse_args()
 
-    if args.local_time and args.tz_override is not None:
-        parser.error("Cannot use --local-time and --tz-override together.")
+    use_alt_message = args.use_alt_message if args.use_alt_message else args.no_alt_message
 
     try:
-        splice(args.output_file, args.zczc_code, args.local_time, args.include_tones, args.tz_override)
+        if args.local_time and args.tz_override is not None:
+            raise ValueError("Cannot use --local-time and --tz-override together.")
+        if args.use_alt_message and args.no_alt_message:
+            raise ValueError("Cannot use --use-alt-message and --no-alt-message together.")
+    except ValueError as ve:
+        print(f"Error: {ve}")
+        return
+
+    try:
+        splice(args.output_file, args.zczc_code, args.local_time, args.include_tones, args.tz_override, use_alt_message)
     except Exception as e:
         print(f"Error: {e}")
 
