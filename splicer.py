@@ -119,7 +119,7 @@ def split_zczc(zczc_string):
     if match:
         return match.groups()
     else:
-        raise ValueError("Invalid ZCZC string format.")
+        raise ValueError("Invalid format. I received the following string: \"" + zczc_string + "\". Please ensure it follows the format: ZCZC-ORG-EEE-PSSCCC+TTTT-JJJHHMM-LLLLLLLL-")
 
 def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz_override=None, use_alt_message=False):
     """
@@ -171,14 +171,14 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
     originator, event, location_codes, duration, datetime_group, station_id = zczc_split
     location_code_list = location_codes.split('-')
 
-    if os.path.exists(os.path.join("EVENTS", f"{event}.wav")) and event in ALT_MESSAGES:
-        if use_alt_message or (input(f"Alternative message available for event {event}. This means {ALT_MESSAGES[event]}. Use it? (y/n): ").strip().lower() == 'y' and sys.stdin.isatty()):
+    if os.path.exists(os.path.join("EVENTS", f"{event.lower()}.wav")) and event in ALT_MESSAGES:
+        if use_alt_message and sys.stdin.isatty() and (input(f"Alternative message available for event {event}. This means {ALT_MESSAGES[event]}. Use it? (y/n): ").strip().lower() == 'y'):
             print(f"Using alternative message for event {event}. This means {ALT_MESSAGES[event]}.")
-            event_file = os.path.join("EVENTS", "ALT", f"{event}.wav")
+            event_file = os.path.join("EVENTS", "ALT", f"{event.lower()}.wav")
         else:
-            event_file = os.path.join("EVENTS", f"{event}.wav")
+            event_file = os.path.join("EVENTS", f"{event.lower()}.wav")
     else:
-        event_file = os.path.join("EVENTS", f"{event}.wav")
+        event_file = os.path.join("EVENTS", f"{event.lower()}.wav")
 
     if os.path.exists(event_file):
         audio_segments.append(AudioSegment.from_wav(event_file))
@@ -312,7 +312,7 @@ def main():
 
     args = parser.parse_args()
 
-    use_alt_message = args.use_alt_message if args.use_alt_message else args.no_alt_message
+    use_alt_message = args.use_alt_message if args.use_alt_message else args.no_alt_message if args.no_alt_message else False
 
     try:
         if args.local_time and args.tz_override is not None:
