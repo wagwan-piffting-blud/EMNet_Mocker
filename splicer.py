@@ -192,7 +192,8 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
                 audio_segments.append(AudioSegment.from_wav(and_file))
             else:
                 raise FileNotFoundError(f"And audio file {and_file} not found.")
-        location_file = os.path.join("LOC", f"{location_code}.wav")
+        zeroed_location_code = "0" + location_code[1:] # We do this because subdivision FIPS audio files are not present, so we zero out the first digit of the location code to get the correct audio file. For example, if the location code is "110001", we will look for "010001.wav" in the LOC directory instead. This is because the subdivision FIPS codes are not included in the audio files (and most alerts use the all of county "0" subdivision anyway), so we need to zero out the first digit to get the correct file for a whole county, even if the ZCZC string says otherwise.
+        location_file = os.path.join("LOC", f"{zeroed_location_code}.wav")
         if os.path.exists(location_file):
             audio_segments.append(AudioSegment.from_wav(location_file))
         else:
