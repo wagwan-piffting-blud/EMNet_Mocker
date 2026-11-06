@@ -113,8 +113,8 @@ def split_zczc(zczc_string):
     We need to use a regex to split this string into its components. This is because the SAME standard allows for multiple county FIPS codes to be specified in the PSSCCC field, which means that we cannot simply split on the hyphens. The regex below is designed to capture each component of the ZCZC string.
     """
 
-    pattern = r"^ZCZC-([A-Z]{3})-([A-Z]{3})-((?:\d{6}(?:-?)){1,31})\+(\d{4})-(\d{7})-([A-Za-z0-9\/ ]{0,8})-?$"
-    match = re.match(pattern, zczc_string)
+    pattern = r"^ZCZC-([A-Z]{3})-([A-Z]{3})-(\d{6}(?:-\d{6}){0,30})\+(\d{4})-(\d{7})-([\x20-\x2A\x2C\x2E-\x7E]{1,8})-"
+    match = re.match(pattern, zczc_string, flags=re.MULTILINE)
 
     if match:
         return match.groups()
