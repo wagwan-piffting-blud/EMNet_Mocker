@@ -57,6 +57,14 @@ python splicer.py -o output.wav -z "ZCZC_CODE" -O "EST"
 
 Note that `-O` and `-l` are _mutually exclusive_; you can only use one of them at a time.
 
+Instead of `-z`, the header can be read from a file with `-Z` or `--zczc-file` (UTF-8). This keeps it off the command line, which is what the EAS TTS dispatcher uses:
+
+```bash
+python splicer.py -o output.wav -Z header.txt
+```
+
+`-z` and `-Z` are mutually exclusive; exactly one of them is required.
+
 For some message types, an alternate message audio file is available. You can specify this when generating the file, or always use it with the `-a` or `--use-alt-message` flag:
 
 ```bash

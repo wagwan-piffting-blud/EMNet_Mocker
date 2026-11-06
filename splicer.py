@@ -303,7 +303,9 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
 def main():
     parser = argparse.ArgumentParser(description="Splice EMNet audio files based on ZCZC EAS Header code.")
     parser.add_argument("-o", "--output_file", required=True, help="Output file path for the spliced audio.")
-    parser.add_argument("-z", "--zczc_code", required=True, help="ZCZC EAS Header code to splice by.")
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument("-z", "--zczc_code", help="ZCZC EAS Header code to splice by.")
+    source.add_argument("-Z", "--zczc-file", help="Read the ZCZC EAS Header code from this file (UTF-8) instead of -z.")
     parser.add_argument("-l", "--local-time", action="store_true", help="Use local time for calculations instead of UTC.")
     parser.add_argument("-O", "--tz-override", help="Override timezone offset by name (e.g., 'EST', 'PST'). Cannot be used with --local-time.")
     parser.add_argument("-a", "--use-alt-message", action="store_true", help="Always use alternative message for the event if available.")
@@ -314,6 +316,10 @@ def main():
     args = parser.parse_args()
 
     use_alt_message = args.use_alt_message if args.use_alt_message else args.no_alt_message if args.no_alt_message else False
+
+    if args.zczc_file is not None:
+        with open(args.zczc_file, encoding="utf-8") as f:
+            args.zczc_code = f.read()
 
     try:
         if args.local_time and args.tz_override is not None:
