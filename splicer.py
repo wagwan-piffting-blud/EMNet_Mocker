@@ -18,6 +18,19 @@ ALT_MESSAGES = {
     "SVR": "'This is a severe thunderstorm warning for' will be used instead of 'A severe thunderstorm warning has been issued for'",
 }
 
+# SAME "P" digit of PSSCCC; 0 (entire county) has no prefix audio.
+SUBDIVISIONS = {
+    "1": "nw",
+    "2": "nc",
+    "3": "ne",
+    "4": "wc",
+    "5": "c",
+    "6": "ec",
+    "7": "sw",
+    "8": "sc",
+    "9": "se",
+}
+
 def generate_tones(zczc_string):
     """
     Generate EAS tones based on the ZCZC string.
@@ -139,6 +152,8 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
     OTHER/until.wav
     OTHER/and.wav
     where 'until' and 'and' are just those words as audio segments used in the splicing process.
+    OTHER/(nw|nc|ne|wc|c|ec|sw|sc|se).wav
+    where these are the SAME county subdivisions (P digits 1-9), spoken before the county when the P digit is not 0.
 
     TIMES:
     TIMES/am.wav
@@ -192,8 +207,15 @@ def splice(output_file, zczc_code, use_local_time=False, include_tones=False, tz
                 audio_segments.append(AudioSegment.from_wav(and_file))
             else:
                 raise FileNotFoundError(f"And audio file {and_file} not found.")
-        zeroed_location_code = "0" + location_code[1:] # We do this because subdivision FIPS audio files are not present, so we zero out the first digit of the location code to get the correct audio file. For example, if the location code is "110001", we will look for "010001.wav" in the LOC directory instead. This is because the subdivision FIPS codes are not included in the audio files (and most alerts use the all of county "0" subdivision anyway), so we need to zero out the first digit to get the correct file for a whole county, even if the ZCZC string says otherwise.
-        location_file = os.path.join("LOC", f"{zeroed_location_code}.wav")
+        subdivision = location_code[0]
+        if subdivision in SUBDIVISIONS:
+            subdivision_file = os.path.join("OTHER", f"{SUBDIVISIONS[subdivision]}.wav")
+            if os.path.exists(subdivision_file):
+                audio_segments.append(AudioSegment.from_wav(subdivision_file))
+            else:
+                raise FileNotFoundError(f"Subdivision audio file {subdivision_file} not found.")
+        # LOC files only exist for whole counties, so the subdivision digit is zeroed after its prefix is spoken.
+        location_file = os.path.join("LOC", f"0{location_code[1:]}.wav")
         if os.path.exists(location_file):
             audio_segments.append(AudioSegment.from_wav(location_file))
         else:

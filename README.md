@@ -1,14 +1,17 @@
 # EMnet Splicer
+
 This script provides functionality to splice together multiple Comlabs Government Systems EMNet audio files into one single audio file based on a ZCZC EAS Header code. The splicing process ensures that the audio segments are concatenated in the correct order based on the header codes. As well, (basic) EAS tone generation is supported based on the ZCZC header information.
 
 Basic Example Usage: `python splicer.py -o output.wav -z "ZCZC-WXR-RWT-031025-031021-031155-031153-019155-031177-031055-031131-019085-031053-019129+0100-2782118-KOAX/NWS-"`
 
 ## Requirements
+
 - Python 3.x (3.13 and above needs `audioop-lts` for audioop backport since audioop is not included in the standard library for these versions)
 - pydub library (for audio processing)
 - ffmpeg (required by pydub for audio file handling)
 
 ## Installation
+
 1. Clone the repository:
 
 ```bash
@@ -22,9 +25,12 @@ cd EMNet_Mocker
 pip install -r requirements.txt
 ```
 
+NOTE: pydub may require additional dependencies depending on your Python version. Please refer to the [audioop-lts](https://pypi.org/project/audioop-lts/) documentation for more information.
+
 3. Ensure ffmpeg is installed and accessible in your system's PATH. You can download it from [ffmpeg.org](https://ffmpeg.org/download.html).
 
 ## Usage
+
 Basic usage:
 
 ```bash
@@ -82,11 +88,13 @@ ALT_MESSAGES = {
 ```
 
 ## A note on missing files
-If you have any more of the EMnet audio files that are not currently included in the repository, feel free to submit a pull request or open an issue to have them added. Make sure the file(s) is/are publicly accessible. **Specifically, the LOC/000000.wav (all of United States) file is currently missing from this repo.** Make sure these are the RAW, ORIGINAL .wav audio files from EMNet, as any modified/compressed versions may not sound correct when splicing.
+
+Some files may be missing from this repository due to the EMNet audio files being proprietary and not publicly available. If you have a copy of these files and wish to provide them for other users, please contact the repository owner or submit a pull request with the files included. Special thanks to GitHub User [@dondaplayer1](https://github.com/dondaplayer1) for providing some of the missing files for this project as of 2026-11-27!
 
 ## Acknowledgments
+
 - [The EASyKit](https://theeasykit.weebly.com/) and [All EMNet Audio (Encoder2)](https://archive.org/details/emnet-audio) for the original audio files from EMNet
 - [pydub](https://github.com/jiaaro/pydub) library for audio processing
 - [Global Weather and EAS Society](https://globaleas.org/) for support and resources
 
-## GenAI Disclosure Notice: Portions of this repository have been generated using Generative AI tools (ChatGPT Codex, GitHub Copilot).
+## GenAI Disclosure Notice: Portions of this repository have been generated using Generative AI tools (Claude Code, ChatGPT Codex, GitHub Copilot).
